@@ -101,6 +101,8 @@ export type UnlockedMap = Record<string, string>
 export interface PlanProgress {
   elapsedDays: number
   remainingDays: number
+  /** 已逾期天数（仅“已逾期”状态下大于 0） */
+  overdueDays: number
   totalDays: number
   shouldHours: number
   actualHours: number
@@ -117,6 +119,8 @@ export interface StudyStats {
   monthlyDuration: number
   activePlans: number
   completedPlans: number
+  /** 已过结束日期且未完成的计划数 */
+  overduePlans: number
   cardCount: number
   masteredCardCount: number
   cardMasteryRate: number
