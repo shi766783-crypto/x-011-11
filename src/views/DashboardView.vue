@@ -17,6 +17,7 @@ const stats = computed(() => statsStore.stats)
     <div class="card-grid">
       <StatCard label="进行中计划" :value="stats.activePlans" icon="🎯" color="#409eff" />
       <StatCard label="已完成计划" :value="stats.completedPlans" icon="✅" color="#67c23a" />
+      <StatCard label="逾期计划" :value="stats.overduePlans" icon="⚠️" color="#f56c6c" to="/plans" />
       <StatCard label="本月学习时长(时)" :value="stats.monthlyDuration" icon="⏱️" color="#e6a23c" />
       <StatCard label="连续学习天数" :value="stats.currentStreak" icon="🔥" color="#f56c6c" />
       <StatCard label="知识卡片总数" :value="stats.cardCount" icon="📚" color="#909399" />

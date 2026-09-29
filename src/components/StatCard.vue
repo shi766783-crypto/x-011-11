@@ -1,14 +1,29 @@
 <script setup lang="ts">
-defineProps<{
+import { useRouter } from 'vue-router'
+
+const props = defineProps<{
   label: string
   value: string | number
   icon: string
   color?: string
+  /** 点击后跳转的路由，传入后卡片可点击 */
+  to?: string
 }>()
+
+const router = useRouter()
+
+function onClick(): void {
+  if (props.to) router.push(props.to)
+}
 </script>
 
 <template>
-  <el-card class="stat-card" shadow="hover">
+  <el-card
+    class="stat-card"
+    :class="{ 'stat-card--clickable': to }"
+    shadow="hover"
+    @click="onClick"
+  >
     <div class="stat-icon" :style="{ background: `${color ?? '#409eff'}1a`, color: color ?? '#409eff' }">
       {{ icon }}
     </div>
@@ -20,6 +35,15 @@ defineProps<{
 </template>
 
 <style scoped>
+.stat-card--clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.stat-card--clickable:hover {
+  transform: translateY(-2px);
+}
+
 .stat-card :deep(.el-card__body) {
   display: flex;
   align-items: center;

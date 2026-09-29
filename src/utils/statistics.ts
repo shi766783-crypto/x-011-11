@@ -79,6 +79,14 @@ export function completedPlanCount(plans: StudyPlan[], logs: StudyLog[]): number
   return plans.filter((p) => isPlanCompleted(p, logs)).length
 }
 
+/** 逾期未完成计划数（已过结束日期且未完成） */
+export function overduePlanCount(plans: StudyPlan[], logs: StudyLog[]): number {
+  const todayKey = today()
+  return plans.filter(
+    (p) => !isPlanCompleted(p, logs) && p.endDate < todayKey,
+  ).length
+}
+
 /** 卡片掌握率（精通卡片占比） */
 export function cardMasteryRate(cards: KnowledgeCard[]): number {
   if (cards.length === 0) return 0
@@ -103,6 +111,7 @@ export function computeStats(
     monthlyDuration: Math.round(monthlyDuration(logs, month) * 10) / 10,
     activePlans: plans.filter((p) => !isPlanCompleted(p, logs) && p.endDate >= today()).length,
     completedPlans: completedPlanCount(plans, logs),
+    overduePlans: overduePlanCount(plans, logs),
     cardCount: cards.length,
     masteredCardCount: cards.filter((c) => c.mastery === '精通').length,
     cardMasteryRate: cardMasteryRate(cards),

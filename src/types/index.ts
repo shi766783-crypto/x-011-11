@@ -117,6 +117,7 @@ export interface StudyStats {
   monthlyDuration: number
   activePlans: number
   completedPlans: number
+  overduePlans: number
   cardCount: number
   masteredCardCount: number
   cardMasteryRate: number

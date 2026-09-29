@@ -5,7 +5,7 @@ import { ElMessage } from 'element-plus'
 import type { Domain, StudyPlan, StudyResource } from '@/types'
 import { DOMAINS } from '@/constants'
 import { computePlanProgress } from '@/utils/progress'
-import { today } from '@/utils/date'
+import { daysBetween, today } from '@/utils/date'
 import { uid } from '@/utils/id'
 import { useLogsStore } from '@/stores/logs'
 import { usePlansStore } from '@/stores/plans'
@@ -47,12 +47,23 @@ const rules: FormRules = {
   dailyHours: [{ required: true, message: '请输入每日学习时长', trigger: 'blur' }],
 }
 
+// 逾期计划置顶（逾期内按结束日期最早在前），其余保持原有顺序
 const planViews = computed(() =>
-  plansStore.plans.map((plan) => ({
-    plan,
-    progress: computePlanProgress(plan, logsStore.logs),
-  })),
+  plansStore.plans
+    .map((plan) => ({
+      plan,
+      progress: computePlanProgress(plan, logsStore.logs),
+    }))
+    .sort((a, b) => {
+      const rankA = a.progress.status === '已逾期' ? 0 : 1
+      const rankB = b.progress.status === '已逾期' ? 0 : 1
+      if (rankA !== rankB) return rankA - rankB
+      if (rankA === 0) return a.plan.endDate.localeCompare(b.plan.endDate)
+      return 0
+    }),
 )
+
+const overdueViews = computed(() => planViews.value.filter((v) => v.progress.status === '已逾期'))
 
 const statusTagType: Record<string, 'info' | 'success' | 'danger' | 'primary'> = {
   未开始: 'info',
@@ -128,12 +139,41 @@ function removePlan(plan: StudyPlan): void {
 
     <el-empty v-if="planViews.length === 0" description="还没有学习计划，点击右上角新建" />
 
+    <el-alert
+      v-if="overdueViews.length"
+      class="overdue-banner"
+      type="error"
+      show-icon
+      :closable="false"
+    >
+      <template #title>
+        <span class="overdue-banner-text">
+          ⚠️ 有 <strong>{{ overdueViews.length }}</strong> 个计划已逾期，请尽快完成或调整结束日期
+        </span>
+      </template>
+    </el-alert>
+
     <div class="plan-list">
-      <el-card v-for="{ plan, progress } in planViews" :key="plan.id" class="plan-card" shadow="hover">
+      <el-card
+        v-for="{ plan, progress } in planViews"
+        :key="plan.id"
+        class="plan-card"
+        :class="{ 'plan-card--overdue': progress.status === '已逾期' }"
+        shadow="hover"
+      >
         <div class="plan-head">
           <div class="plan-title">
             <span class="plan-name">{{ plan.name }}</span>
             <el-tag size="small" :type="statusTagType[progress.status]">{{ progress.status }}</el-tag>
+            <el-tag
+              v-if="progress.status === '已逾期'"
+              size="small"
+              type="danger"
+              effect="dark"
+              class="overdue-days-tag"
+            >
+              已逾期 {{ daysBetween(plan.endDate, today()) }} 天
+            </el-tag>
           </div>
           <el-tag size="small" effect="plain">{{ plan.domain }}</el-tag>
         </div>
@@ -171,10 +211,18 @@ function removePlan(plan: StudyPlan): void {
           <el-button
             v-if="progress.status !== '已完成'"
             size="small"
-            type="success"
+            :type="progress.status === '已逾期' ? 'danger' : 'success'"
             @click="plansStore.toggleComplete(plan.id)"
           >
             标记完成
+          </el-button>
+          <el-button
+            v-else
+            size="small"
+            plain
+            @click="plansStore.toggleComplete(plan.id)"
+          >
+            取消完成
           </el-button>
           <el-popconfirm title="确定删除该计划？" @confirm="removePlan(plan)">
             <template #reference>
@@ -237,10 +285,35 @@ function removePlan(plan: StudyPlan): void {
 </template>
 
 <style scoped>
+.overdue-banner {
+  margin-bottom: 16px;
+}
+
+.overdue-banner-text {
+  font-size: 14px;
+}
+
 .plan-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
+}
+
+.plan-card--overdue {
+  border: 1.5px solid #f56c6c;
+  box-shadow: 0 0 0 2px rgba(245, 108, 108, 0.18);
+}
+
+.plan-card--overdue :deep(.el-card__body) {
+  background: #fef0f0;
+}
+
+.plan-card--overdue .plan-name {
+  color: #c45656;
+}
+
+.overdue-days-tag {
+  font-weight: 600;
 }
 
 .plan-head {
